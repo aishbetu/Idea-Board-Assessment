@@ -36,11 +36,11 @@ services:
       context: ./idea_board_frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: "http://backend:8000"
+        NEXT_PUBLIC_API_BASE_URL: "http://backend:8000"
     restart: unless-stopped
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: "http://backend:8000"
+      NEXT_PUBLIC_API_BASE_URL: "http://backend:8000"
     ports:
       - "3000:3000"
     depends_on:

@@ -20,11 +20,30 @@ From the repository root (where this README and `docker-compose.yml` live), run:
 docker-compose up --build
 ```
 
-This will build the frontend and backend images and start three services:
 
-- frontend → http://localhost:3000
-- backend → http://localhost:8000 (health: http://localhost:8000/health)
-- postgres → listens on container port 5432 and mapped to host 5432
+This will build the frontend and backend images and start three services.
+
+Important networking notes (127.0.0.1 vs container hostnames)
+
+- frontend: http://localhost:3000 (from your host machine)
+- backend: http://localhost:8000 (from your host machine)
+- postgres: container port 5432 (mapped to host 5432)
+
+When services run inside Docker, containers communicate over an internal Docker network. That means:
+
+- From the frontend container, the backend is available at http://backend:8000 (service name `backend`).
+- From your host machine (your browser or curl), the backend is available at http://localhost:8000 (because `docker-compose` maps the container port to the host).
+
+You may see a log message in the backend that mentions `127.0.0.1:8000`. That message is just a formatted log string in the server code and doesn't necessarily reflect the network binding used by Node inside the container. If you need the backend to be accessible by other containers it must listen on all interfaces (0.0.0.0). The backend in this repository calls `server.listen(PORT)` which by default listens on all interfaces; only the log message prints `127.0.0.1`.
+
+If you want to make the log message accurate, consider updating `idea_board_backend/src/server.ts` to log the actual address returned by the server, for example:
+
+```ts
+const address = server.address();
+console.log(`Server listening on http://${address.address}:${address.port}`);
+```
+
+or explicitly bind to `0.0.0.0` when calling `listen`.
 
 To stop the services, press Ctrl+C in the terminal running docker-compose, then run:
 
@@ -56,12 +75,12 @@ PORT=8000
 # DATABASE_URL=postgres://<user>:<password>@db:5432/<db>
 
 # Frontend (Next.js) - used at build time if you wire it into Dockerfile
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
 
 Notes:
 - The compose file already injects DATABASE_URL into the backend service as: `postgres://postgres:postgres@db:5432/idea_board_db`.
-- Next.js reads `NEXT_PUBLIC_` env vars at build time. If you need the frontend to point to the backend service in the container network, set `NEXT_PUBLIC_API_URL=http://backend:8000` when building inside Docker. See "Build-time vars for frontend" below.
+- Next.js reads `NEXT_PUBLIC_` env vars at build time. If you need the frontend to point to the backend service in the container network, set `NEXT_PUBLIC_API_BASE_URL=http://backend:8000` when building inside Docker. See "Build-time vars for frontend" below.
 
 ## Prisma / database migrations
 
@@ -115,10 +134,10 @@ npm ci
 npm run dev
 ```
 
-Note: when running locally you must ensure the frontend knows where the backend API is (set `NEXT_PUBLIC_API_URL` locally or use proxying). For example, in development run:
+Note: when running locally you must ensure the frontend knows where the backend API is (set `NEXT_PUBLIC_API_BASE_URL` locally or use proxying). For example, in development run:
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev
 ```
 
 ## Build-time vars for frontend
@@ -128,14 +147,14 @@ Next.js reads `NEXT_PUBLIC_` environment variables at build time, so if you want
 1. Update `idea_board_frontend/Dockerfile` to accept a build ARG and set an ENV before `npm run build`. Example snippet to add early in the Dockerfile:
 
 ```dockerfile
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ```
 
 2. Pass the build arg through docker-compose (the provided `docker-compose.yml` includes a build arg placeholder). Or build manually:
 
 ```bash
-docker build --build-arg NEXT_PUBLIC_API_URL=http://backend:8000 -t idea_board_frontend ./idea_board_frontend
+docker build --build-arg NEXT_PUBLIC_API_BASE_URL=http://backend:8000 -t idea_board_frontend ./idea_board_frontend
 ```
 
 If you don't do this, the built frontend might use a default that expects the API at `http://localhost:8000`.
@@ -149,7 +168,7 @@ If you don't do this, the built frontend might use a default that expects the AP
   - A: If you have a local Postgres running, change or remove the port mapping in `docker-compose.yml` for the `db` service (or stop the local Postgres). Removing `ports` for `db` keeps it internal to Docker network.
 
 - Q: Frontend shows incorrect API URL after container build
-  - A: Ensure `NEXT_PUBLIC_API_URL` is passed at build time (see Build-time vars section) or run frontend in dev with the correct env.
+  - A: Ensure `NEXT_PUBLIC_API_BASE_URL` is passed at build time (see Build-time vars section) or run frontend in dev with the correct env.
 
 - Q: Prisma `migrate dev` asks for a non-empty database or creates a shadow DB failure
   - A: Use `prisma migrate deploy` in CI or when you already have migrations, or use `prisma db push` during early development if you don't need migration history.
@@ -190,7 +209,7 @@ docker-compose down -v  # removes volumes
 ## Optional additions (recommended enhancements)
 
 - Add an entrypoint script to the backend Dockerfile that waits for the DB (`pg_isready`) and optionally runs `prisma migrate deploy` before starting the server. This makes startup smoother.
-- Modify the frontend Dockerfile to accept a build arg `NEXT_PUBLIC_API_URL` and set it as an ENV before running `npm run build`.
+- Modify the frontend Dockerfile to accept a build arg `NEXT_PUBLIC_API_BASE_URL` and set it as an ENV before running `npm run build`.
 - Add an Adminer or pgAdmin service to `docker-compose.yml` for easy DB inspection.
 
 ## Where to look next in the repo

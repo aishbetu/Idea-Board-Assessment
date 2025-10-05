@@ -28,6 +28,10 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy the rest of the project files
 COPY . .
 
+# Accept a build-time API URL and expose it as an env var for Next.js to read at build time
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+
 # Build the Next.js app (uses script from package.json)
 RUN npm run build
 
@@ -40,6 +44,9 @@ COPY --from=builder /app .
 
 # Expose default Next.js port
 EXPOSE 3000
+
+# Ensure the runtime also has the variable available (useful for server-side calls)
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 
 # Use the package.json start script which runs `next start`
 CMD ["npm", "run", "start"]
