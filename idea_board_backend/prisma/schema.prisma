@@ -6,6 +6,10 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Include binaries for the common runtimes used in Docker images.
+  // "native" keeps a build for the build machine; the debian-openssl targets
+  // ensure the query engine is available for containers using OpenSSL 1.1 or 3.0.
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
