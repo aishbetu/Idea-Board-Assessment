@@ -26,6 +26,9 @@ services:
     environment:
       PORT: 8000
       DATABASE_URL: "postgres://postgres:postgres@db:5432/idea_board_db"
+      # Allow the frontend on the host to call the backend during development
+      CORS_ORIGIN: "http://localhost:3000"
+      CORS_ALLOW_CREDENTIALS: "false"
     ports:
       - "8000:8000"
     depends_on:
