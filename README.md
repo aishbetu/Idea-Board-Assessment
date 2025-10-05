@@ -82,19 +82,6 @@ Notes:
 - The compose file already injects DATABASE_URL into the backend service as: `postgres://postgres:postgres@db:5432/idea_board_db`.
 - Next.js reads `NEXT_PUBLIC_` env vars at build time. If you need the frontend to point to the backend service in the container network, set `NEXT_PUBLIC_API_BASE_URL=http://backend:8000` when building inside Docker. See "Build-time vars for frontend" below.
 
-CORS configuration (important)
-
-- The backend supports configuring the allowed origin via the `CORS_ORIGIN` environment variable. By default the compose file sets `CORS_ORIGIN=http://localhost:3000` so the browser-hosted frontend can call the API without CORS errors.
-- If you run the frontend from another host or domain, update `CORS_ORIGIN` accordingly or set it to `*` to allow all origins (not recommended for production).
-- You can also control whether credentials (cookies, auth) are allowed with `CORS_ALLOW_CREDENTIALS=true|false`.
-
-Examples (in root `.env`):
-
-```ini
-CORS_ORIGIN=http://localhost:3000
-CORS_ALLOW_CREDENTIALS=false
-```
-
 ## Prisma / database migrations
 
 The backend uses Prisma with PostgreSQL. The Docker build for the backend runs `prisma generate`, but it does not automatically apply migrations to the DB on container startup.

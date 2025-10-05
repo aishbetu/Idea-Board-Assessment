@@ -6,24 +6,11 @@ import 'dotenv/config';
 //import routes
 import IdeaBoardRoutes from './routes/ideaBoardRoutes';
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT;
 
 const app = express();
-
-// CORS configuration
-// Read allowed origin from env (set to '*' to allow all). For local development
-// we default to allowing the frontend at http://localhost:3000.
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
-const CORS_ALLOW_CREDENTIALS = process.env.CORS_ALLOW_CREDENTIALS === 'true';
-
-const corsOptions = CORS_ORIGIN === '*'
-	? undefined
-	: { origin: CORS_ORIGIN, credentials: CORS_ALLOW_CREDENTIALS };
-
 // Middlewares
-app.use(cors(corsOptions));
-// Ensure preflight requests are handled
-app.options('*', cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 
 // Health route
@@ -36,9 +23,8 @@ app.use('/ideas', IdeaBoardRoutes);
 // Create HTTP server (so we can access the server instance if needed)
 const server = http.createServer(app);
 
-// Bind to 0.0.0.0 so the server is reachable from other containers
-server.listen(Number(PORT), '0.0.0.0', () => {
-	console.log(`Server listening on http://0.0.0.0:${PORT}`);
+server.listen(PORT, () => {
+	console.log(`Server listening on http://127.0.0.1:${PORT}`);
 });
 
 // Graceful shutdown helpers
