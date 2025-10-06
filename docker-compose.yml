@@ -24,7 +24,6 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      PORT: 8000
       DATABASE_URL: "postgres://postgres:postgres@db:5432/idea_board_db"
     ports:
       - "8000:8000"
@@ -39,7 +38,6 @@ services:
         NEXT_PUBLIC_API_BASE_URL: "http://backend:8000"
     restart: unless-stopped
     environment:
-      NODE_ENV: development
       NEXT_PUBLIC_API_BASE_URL: "http://backend:8000"
     ports:
       - "3000:3000"
