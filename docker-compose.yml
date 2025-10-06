@@ -1,9 +1,6 @@
 version: "3.9"
 
 services:
-  # Load variables from the root .env file (create by copying .env.example)
-  env_file:
-    - ./.env
 
   db:
     image: postgres:15
